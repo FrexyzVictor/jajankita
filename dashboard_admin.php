@@ -18,7 +18,7 @@ $now = date("Y-m-d H:i:s");
 mysqli_query($koneksi, "UPDATE users SET status='online', login_time='$now' WHERE username='$namaAdmin'");
 
 // Ambil semua data user
-$query = mysqli_query($koneksi, "SELECT * FROM users ORDER BY id ASC");
+$query = mysqli_query($koneksi, "SELECT * FROM users ORDER BY id, role ASC");
 ?>
 
 
@@ -872,7 +872,7 @@ $query = mysqli_query($koneksi, "SELECT * FROM users ORDER BY id ASC");
 			<li>
 				<a href="#"><i class='bx bxs-inbox icon'></i> Pengelolaan Produk <i class='bx bx-chevron-right icon-right'></i></a>
 				<ul class="side-dropdown">
-					<li><a href="#">Manage User</a></li>
+					<li><a href="pesanan.php">Manage Produk</a></li>
 					<li><a href="#">Reports</a></li>
 					<li><a href="#">Invoices</a></li>
 					<li><a href="#">Logs</a></li>
@@ -1019,7 +1019,7 @@ $query = mysqli_query($koneksi, "SELECT * FROM users ORDER BY id ASC");
 			<div class="wrapper">
     <div class="card">
         <div class="corner-accent"></div>
-        <h2><i class="fas fa-list"></i>User Admin</h2>
+        <h2><i class="fas fa-list"></i>Manage User</h2>
         <div class="table-admin">
             <table>
                 <thead>
@@ -1027,7 +1027,7 @@ $query = mysqli_query($koneksi, "SELECT * FROM users ORDER BY id ASC");
                         <th>ID</th>
                         <th>Role</th>
                         <th>Username</th>
-                        <th>Durasi Online</th>
+                        <th>Durations Time</th>
                         <th>Status</th>
                     </tr>
                 </thead>
