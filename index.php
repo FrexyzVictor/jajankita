@@ -1,55 +1,7 @@
 <?php
 include "koneksi.php";
 if ($koneksi->connect_error) {
-    die("Koneksi gagal: " . $conn->connect_error);
-}
-
-$sql = "SELECT id_menu, nama_menu, harga, kategori FROM menu ORDER BY kategori, nama_menu";
-$res = $koneksi->query($sql);
-
-$menus = [];
-if ($res) {
-    while ($row = $res->fetch_assoc()) {
-        $menus[$row['kategori']][] = $row;
-    }
-} else {
-    die("Query gagal: " . $koneksi->error);
-}
-$koneksi->close();
-
-/* fungsi gambar */
-function img_path_for(array $menu): ?string {
-    $baseDir = __DIR__ . '/img/';
-    $webBase = 'img/';
-    $exts    = ['png','jpg','jpeg','webp','gif'];
-
-    // aturan khusus
-    $nama = strtolower(trim($menu['nama_menu']));
-    if ($nama === 'es jeruk') {
-        return $webBase . 'es_jeruk.jpg';
-    }
-    if ($nama === 'es teh manis') {
-        return $webBase . 'es_tehmanis.jpg';
-    }
-
-    // cek berdasar id_menu
-    foreach ($exts as $e) {
-        $file = $baseDir . $menu['id_menu'] . '.' . $e;
-        if (file_exists($file)) {
-            return $webBase . $menu['id_menu'] . '.' . $e;
-        }
-    }
-
-    // cek slug nama
-    $slug = strtolower(preg_replace('/[^a-z0-9]/i', '', $menu['nama_menu']));
-    foreach ($exts as $e) {
-        $file = $baseDir . $slug . '.' . $e;
-        if (file_exists($file)) {
-            return $webBase . $slug . '.' . $e;
-        }
-    }
-
-    return null; // fallback
+    die("Koneksi gagal: " . $koneksi->connect_error);
 }
 ?>
 <!DOCTYPE html>
@@ -60,6 +12,7 @@ function img_path_for(array $menu): ?string {
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
     body { font-family:'Segoe UI',sans-serif;background:#f0f2f5;margin:0;padding:0; }
+    body::-webkit-scrollbar { display: none; }
     .container { max-width:1100px;margin:auto;padding:30px;overflow-x:hidden; }
 
     /* SLIDER PROMO */
@@ -101,10 +54,10 @@ function img_path_for(array $menu): ?string {
     /* gambar menu */
     .menu-card img {
         width:100%;
-        height:180px;           /* tinggi seragam */
-        object-fit:contain;     /* proporsional, tidak terpotong */
-        background:#fafafa;     /* latar belakang netral */
-        padding:6px;            /* biar ada jarak */
+        height:180px;
+        object-fit:contain;
+        background:#fafafa;
+        padding:6px;
         border-bottom:1px solid #eee;
         transition:transform .3s;
     }
@@ -122,15 +75,6 @@ function img_path_for(array $menu): ?string {
     }
     button:hover { background:#218838; }
 
-
-    /* Tombol Lihat Selengkapnya */
-    .lihat-selengkapnya {
-        display:inline-block;margin-top:12px;padding:8px 14px;
-        background:#007bff;color:#fff;text-decoration:none;
-        border-radius:6px;font-size:14px;font-weight:600;
-        transition:background .2s;
-    }
-    .lihat-selengkapnya:hover { background:#0056b3; }
 </style>
 </head>
 <body>
@@ -145,46 +89,287 @@ function img_path_for(array $menu): ?string {
 </div>
 
 <div class="container">
-<?php foreach ($menus as $kategori => $items): 
-    $kategoriLower = strtolower($kategori);
-    $warna = '';
-    if ($kategoriLower==='makanan ringan') $warna='orange';
-    elseif ($kategoriLower==='minuman') $warna='green';
-    elseif ($kategoriLower==='snack') $warna='purple';
-?>
-    <div class="kategori-header <?= $warna ?>">
+
+    <!-- KATEGORI SNACK -->
+    <?php
+    $sql_snack = "SELECT id_menu, nama_menu, harga, kategori, gambar FROM menu WHERE kategori='Snack' ORDER BY nama_menu LIMIT 4";
+    $result_snack = $koneksi->query($sql_snack);
+    
+    if ($result_snack && $result_snack->num_rows > 0) {
+    ?>
+    <div class="kategori-header purple">
         <img src="logo 1.png" alt="Logo" class="logo-kategori" />
-        <span><?= htmlspecialchars(ucwords($kategori)) ?></span>
+        <span>Snack</span>
     </div>
     <div class="kategori-desc">
-        Nikmati pilihan <?= htmlspecialchars($kategori) ?> terbaik kami, dibuat khusus untuk memanjakan lidah Anda.
+        Nikmati pilihan snack terbaik kami, dibuat khusus untuk memanjakan lidah Anda.
     </div>
 
     <div class="menu-grid">
-    <?php foreach ($items as $menu): 
-        $img_path = img_path_for($menu);
-        if (!$img_path) continue;
-    ?>
+        <?php
+        $row1 = $result_snack->fetch_assoc();
+        if ($row1) {
+        ?>
         <div class="menu-card">
-            <img src="<?= htmlspecialchars($img_path) ?>" alt="<?= htmlspecialchars($menu['nama_menu']) ?>">
+            <img src="uploads/<?php echo $row1['gambar']; ?>" alt="<?php echo $row1['nama_menu']; ?>">
             <div class="menu-info">
-                <h3><?= htmlspecialchars($menu['nama_menu']) ?></h3>
-                <div class="harga">Rp <?= number_format((float)$menu['harga'],0,',','.') ?></div>
+                <h3><?php echo $row1['nama_menu']; ?></h3>
+                <div class="harga">Rp <?php echo number_format($row1['harga'], 0, ',', '.'); ?></div>
                 <form action="proses_pesan.php" method="POST">
-                    <input type="hidden" name="id_menu" value="<?= (int)$menu['id_menu'] ?>">
+                    <input type="hidden" name="id_menu" value="<?php echo $row1['id_menu']; ?>">
                     <input type="number" name="jumlah" value="1" min="1" required>
-                    <button type="submit"><a href="Pesanan.php">Pesan</a></button>
+                    <button type="submit">Pesan</button>
                 </form>
             </div>
         </div>
-    <?php endforeach; ?>
+        <?php
+        }
+        
+        $row2 = $result_snack->fetch_assoc();
+        if ($row2) {
+        ?>
+        <div class="menu-card">
+            <img src="uploads/<?php echo $row2['gambar']; ?>" alt="<?php echo $row2['nama_menu']; ?>">
+            <div class="menu-info">
+                <h3><?php echo $row2['nama_menu']; ?></h3>
+                <div class="harga">Rp <?php echo number_format($row2['harga'], 0, ',', '.'); ?></div>
+                <form action="proses_pesan.php" method="POST">
+                    <input type="hidden" name="id_menu" value="<?php echo $row2['id_menu']; ?>">
+                    <input type="number" name="jumlah" value="1" min="1" required>
+                    <button type="submit">Pesan</button>
+                </form>
+            </div>
+        </div>
+        <?php
+        }
+        
+        $row3 = $result_snack->fetch_assoc();
+        if ($row3) {
+        ?>
+        <div class="menu-card">
+            <img src="uploads/<?php echo $row3['gambar']; ?>" alt="<?php echo $row3['nama_menu']; ?>">
+            <div class="menu-info">
+                <h3><?php echo $row3['nama_menu']; ?></h3>
+                <div class="harga">Rp <?php echo number_format($row3['harga'], 0, ',', '.'); ?></div>
+                <form action="proses_pesan.php" method="POST">
+                    <input type="hidden" name="id_menu" value="<?php echo $row3['id_menu']; ?>">
+                    <input type="number" name="jumlah" value="1" min="1" required>
+                    <button type="submit">Pesan</button>
+                </form>
+            </div>
+        </div>
+        <?php
+        }
+        
+        $row4 = $result_snack->fetch_assoc();
+        if ($row4) {
+        ?>
+        <div class="menu-card">
+            <img src="uploads/<?php echo $row4['gambar']; ?>" alt="<?php echo $row4['nama_menu']; ?>">
+            <div class="menu-info">
+                <h3><?php echo $row4['nama_menu']; ?></h3>
+                <div class="harga">Rp <?php echo number_format($row4['harga'], 0, ',', '.'); ?></div>
+                <form action="proses_pesan.php" method="POST">
+                    <input type="hidden" name="id_menu" value="<?php echo $row4['id_menu']; ?>">
+                    <input type="number" name="jumlah" value="1" min="1" required>
+                    <button type="submit">Pesan</button>
+                </form>
+            </div>
+        </div>
+        <?php
+        }
+        ?>
+    </div>
+    <?php
+    }
+    ?>
+
+    <?php
+    $sql_minuman = "SELECT id_menu, nama_menu, harga, kategori, gambar FROM menu WHERE kategori='Minuman' ORDER BY nama_menu LIMIT 4";
+    $result_minuman = $koneksi->query($sql_minuman);
+    
+    if ($result_minuman && $result_minuman->num_rows > 0) {
+    ?>
+    <div class="kategori-header green">
+        <img src="logo 1.png" alt="Logo" class="logo-kategori" />
+        <span>Minuman</span>
+    </div>
+    <div class="kategori-desc">
+        Nikmati pilihan minuman terbaik kami, dibuat khusus untuk memanjakan lidah Anda.
     </div>
 
-    <?php if (count($items) >= 4): ?>
-        <a href="kategori.php?jenis=<?= urlencode($kategori) ?>" class="lihat-selengkapnya">Lihat Selengkapnya</a>
-    <?php endif; ?>
+    <div class="menu-grid">
+        <?php
+        $row1 = $result_minuman->fetch_assoc();
+        if ($row1) {
+        ?>
+        <div class="menu-card">
+            <img src="uploads/<?php echo $row1['gambar']; ?>" alt="<?php echo $row1['nama_menu']; ?>">
+            <div class="menu-info">
+                <h3><?php echo $row1['nama_menu']; ?></h3>
+                <div class="harga">Rp <?php echo number_format($row1['harga'], 0, ',', '.'); ?></div>
+                <form action="proses_pesan.php" method="POST">
+                    <input type="hidden" name="id_menu" value="<?php echo $row1['id_menu']; ?>">
+                    <input type="number" name="jumlah" value="1" min="1" required>
+                    <button type="submit">Pesan</button>
+                </form>
+            </div>
+        </div>
+        <?php
+        }
+        
+        $row2 = $result_minuman->fetch_assoc();
+        if ($row2) {
+        ?>
+        <div class="menu-card">
+            <img src="uploads/<?php echo $row2['gambar']; ?>" alt="<?php echo $row2['nama_menu']; ?>">
+            <div class="menu-info">
+                <h3><?php echo $row2['nama_menu']; ?></h3>
+                <div class="harga">Rp <?php echo number_format($row2['harga'], 0, ',', '.'); ?></div>
+                <form action="proses_pesan.php" method="POST">
+                    <input type="hidden" name="id_menu" value="<?php echo $row2['id_menu']; ?>">
+                    <input type="number" name="jumlah" value="1" min="1" required>
+                    <button type="submit">Pesan</button>
+                </form>
+            </div>
+        </div>
+        <?php
+        }
+        
+        $row3 = $result_minuman->fetch_assoc();
+        if ($row3) {
+        ?>
+        <div class="menu-card">
+            <img src="uploads/<?php echo $row3['gambar']; ?>" alt="<?php echo $row3['nama_menu']; ?>">
+            <div class="menu-info">
+                <h3><?php echo $row3['nama_menu']; ?></h3>
+                <div class="harga">Rp <?php echo number_format($row3['harga'], 0, ',', '.'); ?></div>
+                <form action="proses_pesan.php" method="POST">
+                    <input type="hidden" name="id_menu" value="<?php echo $row3['id_menu']; ?>">
+                    <input type="number" name="jumlah" value="1" min="1" required>
+                    <button type="submit">Pesan</button>
+                </form>
+            </div>
+        </div>
+        <?php
+        }
+        
+        $row4 = $result_minuman->fetch_assoc();
+        if ($row4) {
+        ?>
+        <div class="menu-card">
+            <img src="uploads/<?php echo $row4['gambar']; ?>" alt="<?php echo $row4['nama_menu']; ?>">
+            <div class="menu-info">
+                <h3><?php echo $row4['nama_menu']; ?></h3>
+                <div class="harga">Rp <?php echo number_format($row4['harga'], 0, ',', '.'); ?></div>
+                <form action="proses_pesan.php" method="POST">
+                    <input type="hidden" name="id_menu" value="<?php echo $row4['id_menu']; ?>">
+                    <input type="number" name="jumlah" value="1" min="1" required>
+                    <button type="submit">Pesan</button>
+                </form>
+            </div>
+        </div>
+        <?php
+        }
+        ?>
+    </div>
+    <?php
+    }
+    ?>
 
-<?php endforeach; ?>
+    <?php
+    $sql_makanan = "SELECT id_menu, nama_menu, harga, kategori, gambar FROM menu WHERE kategori='Makanan Ringan' ORDER BY nama_menu LIMIT 4";
+    $result_makanan = $koneksi->query($sql_makanan);
+    
+    if ($result_makanan && $result_makanan->num_rows > 0) {
+    ?>
+    <div class="kategori-header orange">
+        <img src="logo 1.png" alt="Logo" class="logo-kategori" />
+        <span>Makanan Ringan</span>
+    </div>
+    <div class="kategori-desc">
+        Nikmati pilihan makanan ringan terbaik kami, dibuat khusus untuk memanjakan lidah Anda.
+    </div>
+
+    <div class="menu-grid">
+        <?php
+        $row1 = $result_makanan->fetch_assoc();
+        if ($row1) {
+        ?>
+        <div class="menu-card">
+            <img src="uploads/<?php echo $row1['gambar']; ?>" alt="<?php echo $row1['nama_menu']; ?>">
+            <div class="menu-info">
+                <h3><?php echo $row1['nama_menu']; ?></h3>
+                <div class="harga">Rp <?php echo number_format($row1['harga'], 0, ',', '.'); ?></div>
+                <form action="proses_pesan.php" method="POST">
+                    <input type="hidden" name="id_menu" value="<?php echo $row1['id_menu']; ?>">
+                    <input type="number" name="jumlah" value="1" min="1" required>
+                    <button type="submit">Pesan</button>
+                </form>
+            </div>
+        </div>
+        <?php
+        }
+        
+        $row2 = $result_makanan->fetch_assoc();
+        if ($row2) {
+        ?>
+        <div class="menu-card">
+            <img src="uploads/<?php echo $row2['gambar']; ?>" alt="<?php echo $row2['nama_menu']; ?>">
+            <div class="menu-info">
+                <h3><?php echo $row2['nama_menu']; ?></h3>
+                <div class="harga">Rp <?php echo number_format($row2['harga'], 0, ',', '.'); ?></div>
+                <form action="proses_pesan.php" method="POST">
+                    <input type="hidden" name="id_menu" value="<?php echo $row2['id_menu']; ?>">
+                    <input type="number" name="jumlah" value="1" min="1" required>
+                    <button type="submit">Pesan</button>
+                </form>
+            </div>
+        </div>
+        <?php
+        }
+        
+        $row3 = $result_makanan->fetch_assoc();
+        if ($row3) {
+        ?>
+        <div class="menu-card">
+            <img src="uploads/<?php echo $row3['gambar']; ?>" alt="<?php echo $row3['nama_menu']; ?>">
+            <div class="menu-info">
+                <h3><?php echo $row3['nama_menu']; ?></h3>
+                <div class="harga">Rp <?php echo number_format($row3['harga'], 0, ',', '.'); ?></div>
+                <form action="proses_pesan.php" method="POST">
+                    <input type="hidden" name="id_menu" value="<?php echo $row3['id_menu']; ?>">
+                    <input type="number" name="jumlah" value="1" min="1" required>
+                    <button type="submit">Pesan</button>
+                </form>
+            </div>
+        </div>
+        <?php
+        }
+        
+        $row4 = $result_makanan->fetch_assoc();
+        if ($row4) {
+        ?>
+        <div class="menu-card">
+            <img src="uploads/<?php echo $row4['gambar']; ?>" alt="<?php echo $row4['nama_menu']; ?>">
+            <div class="menu-info">
+                <h3><?php echo $row4['nama_menu']; ?></h3>
+                <div class="harga">Rp <?php echo number_format($row4['harga'], 0, ',', '.'); ?></div>
+                <form action="proses_pesan.php" method="POST">
+                    <input type="hidden" name="id_menu" value="<?php echo $row4['id_menu']; ?>">
+                    <input type="number" name="jumlah" value="1" min="1" required>
+                    <button type="submit">Pesan</button>
+                </form>
+            </div>
+        </div>
+        <?php
+        }
+        ?>
+    </div>
+    <?php
+    }
+    ?>
+
 </div>
 
 <script>
@@ -195,5 +380,9 @@ function showSlide(idx){
 }
 setInterval(()=>{ currentSlide=(currentSlide+1)%slides.length; showSlide(currentSlide); }, 3500);
 </script>
+
+<?php
+$koneksi->close();
+?>
 </body>
 </html>
